@@ -297,6 +297,28 @@ public class ResultSetTest extends AbstractTest {
         }
     }
 
+    @Test
+    public void testLocalDateTimeOfJulianCalendar() throws SQLException {
+        try (Connection con = getConnection(); Statement stmt = con.createStatement()) {
+            final String testValue = "1066-10-14T00:00:00";
+            stmt.executeUpdate("CREATE TABLE " + AbstractSQLGenerator.escapeIdentifier(tableName)
+                    + " (id INT PRIMARY KEY, dt DATETIME2, dt2 DATETIME2)");
+            stmt.executeUpdate("INSERT INTO " + AbstractSQLGenerator.escapeIdentifier(tableName)
+                    + " (id, dt, dt2) VALUES (1, '" + testValue + "', null)");
+
+            try (ResultSet rs = stmt.executeQuery(
+                    "SELECT dt, dt2 FROM " + AbstractSQLGenerator.escapeIdentifier(tableName) + " WHERE id=1")) {
+                rs.next();
+                LocalDateTime expected = LocalDateTime.parse(testValue);
+                LocalDateTime actual = rs.getObject(1, LocalDateTime.class);
+                assertEquals(expected, actual);
+                assertNull(rs.getObject(2, LocalDateTime.class));
+            } finally {
+                TestUtils.dropTableIfExists(AbstractSQLGenerator.escapeIdentifier(tableName), stmt);
+            }
+        }
+    }
+
     /**
      * Tests getObject(n, java.time.OffsetDateTime.class) and getObject(n, java.time.OffsetTime.class).
      * 
