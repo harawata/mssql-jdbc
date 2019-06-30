@@ -20,7 +20,11 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.sql.Timestamp;
 import java.text.MessageFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -32,6 +36,10 @@ import java.util.TimeZone;
  */
 
 final class DDC {
+
+    private static final LocalDate BASE_DATE_0001 = LocalDate.of(1, 1, 1);
+    private static final LocalDate BASE_DATE_1900 = LocalDate.of(1900, 1, 1);
+    private static final LocalTime BASE_TIME = LocalTime.of(0, 0);
 
     /**
      * Convert an Integer object to desired target user type.
@@ -754,6 +762,28 @@ final class DDC {
      */
     static final Object convertTemporalToObject(JDBCType jdbcType, SSType ssType, Calendar timeZoneCalendar,
             int daysSinceBaseDate, long ticksSinceMidnight, int fractionalSecondsScale) {
+        // #1070
+        if (JDBCType.TIMESTAMP.equals(jdbcType) || JDBCType.DATETIME.equals(jdbcType)) {
+            LocalDate localDate;
+            LocalTime localTime;
+            if (SSType.DATETIME.equals(ssType) || SSType.TIME.equals(ssType)) {
+                localDate = BASE_DATE_1900.plusDays(daysSinceBaseDate);
+            } else {
+                localDate = BASE_DATE_0001.plusDays(daysSinceBaseDate);
+            }
+            if (SSType.DATETIME.equals(ssType)) {
+                // ticksSinceMidnight is in milliseconds
+                localTime = BASE_TIME.plusNanos(ticksSinceMidnight * Nanos.PER_MILLISECOND);
+            } else {
+                localTime = BASE_TIME.plusNanos(ticksSinceMidnight);
+            }
+            LocalDateTime localDateTime = LocalDateTime.of(localDate, localTime);
+            if (SSType.DATETIMEOFFSET.equals(ssType) && !UTC.timeZone.hasSameRules(timeZoneCalendar.getTimeZone())) {
+                return localDateTime.plusSeconds(TimeZone.getDefault().getRawOffset() / 1000);
+            }
+            return localDateTime;
+        }
+
         // Determine the local time zone to associate with the value. Use the default VM
         // time zone if no time zone is otherwise specified.
         TimeZone localTimeZone = (null != timeZoneCalendar) ? timeZoneCalendar.getTimeZone() : TimeZone.getDefault();
@@ -1058,6 +1088,33 @@ final class DDC {
             default:
                 throw new AssertionError("Unexpected JDBCType: " + jdbcType);
         }
+    }
+
+    static java.sql.Timestamp localDateTimeToTimestamp(LocalDateTime ldt, Calendar cal) {
+        if (ldt == null) {
+            return null;
+        }
+        if (cal == null) {
+            return Timestamp.valueOf(ldt);
+        }
+        TimeZone timeZone = cal.getTimeZone();
+
+        // return Timestamp.from(ldt.atZone(timeZone.toZoneId()).toInstant());
+        // Although the above conversion might be more accurate,
+        // it could return different value than the following method.
+        // e.g. in some U.S. zones before 1883-11-18 (railroad time)
+
+        GregorianCalendar localCal = new GregorianCalendar(timeZone, Locale.US);
+        localCal.clear();
+        localCal.set(Calendar.YEAR, ldt.getYear());
+        localCal.set(Calendar.MONTH, ldt.getMonthValue() - 1);
+        localCal.set(Calendar.DATE, ldt.getDayOfMonth());
+        localCal.set(Calendar.HOUR_OF_DAY, ldt.getHour());
+        localCal.set(Calendar.MINUTE, ldt.getMinute());
+        localCal.set(Calendar.SECOND, ldt.getSecond());
+        Timestamp ts = new Timestamp(localCal.getTimeInMillis());
+        ts.setNanos(ldt.getNano());
+        return ts;
     }
 
     /**

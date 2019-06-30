@@ -24,6 +24,7 @@ import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.MessageFormat;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
@@ -704,6 +705,9 @@ public class SQLServerCallableStatement extends SQLServerPreparedStatement imple
         Object value = getValue(index,
                 getterGetParam(index).getJdbcTypeSetByUser() != null ? getterGetParam(index).getJdbcTypeSetByUser()
                                                                      : getterGetParam(index).getJdbcType());
+        if (value instanceof LocalDateTime) {
+            value = DDC.localDateTimeToTimestamp((LocalDateTime) value, null);
+        }
         loggerExternal.exiting(getClassNameLogging(), "getObject", value);
         return value;
     }
@@ -857,7 +861,7 @@ public class SQLServerCallableStatement extends SQLServerPreparedStatement imple
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getTimestamp", index);
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(index, JDBCType.TIMESTAMP);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(index, JDBCType.TIMESTAMP), null);
         loggerExternal.exiting(getClassNameLogging(), "getTimestamp", value);
         return value;
     }
@@ -866,7 +870,7 @@ public class SQLServerCallableStatement extends SQLServerPreparedStatement imple
     public Timestamp getTimestamp(String parameterName) throws SQLServerException {
         loggerExternal.entering(getClassNameLogging(), "getTimestamp", parameterName);
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(findColumn(parameterName), JDBCType.TIMESTAMP);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(findColumn(parameterName), JDBCType.TIMESTAMP), null);
         loggerExternal.exiting(getClassNameLogging(), "getTimestamp", value);
         return value;
     }
@@ -876,7 +880,7 @@ public class SQLServerCallableStatement extends SQLServerPreparedStatement imple
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getTimestamp", new Object[] {index, cal});
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(index, JDBCType.TIMESTAMP, cal);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(index, JDBCType.TIMESTAMP, cal), cal);
         loggerExternal.exiting(getClassNameLogging(), "getTimestamp", value);
         return value;
     }
@@ -886,7 +890,7 @@ public class SQLServerCallableStatement extends SQLServerPreparedStatement imple
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getTimestamp", new Object[] {name, cal});
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(findColumn(name), JDBCType.TIMESTAMP, cal);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(findColumn(name), JDBCType.TIMESTAMP, cal), cal);
         loggerExternal.exiting(getClassNameLogging(), "getTimestamp", value);
         return value;
     }

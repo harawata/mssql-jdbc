@@ -23,6 +23,7 @@ import java.sql.SQLType;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.text.MessageFormat;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -2068,6 +2069,10 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
         return value;
     }
 
+    private LocalDateTime getLocalDateTime(int columnIndex) throws SQLServerException {
+        return (LocalDateTime) getValue(columnIndex, JDBCType.TIMESTAMP);
+    }
+
     @Override
     public java.io.InputStream getAsciiStream(int columnIndex) throws SQLServerException {
         loggerExternal.entering(getClassNameLogging(), "getAsciiStream", columnIndex);
@@ -2345,6 +2350,9 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
         loggerExternal.entering(getClassNameLogging(), "getObject", columnIndex);
         checkClosed();
         Object value = getValue(columnIndex, getterGetColumn(columnIndex).getTypeInfo().getSSType().getJDBCType());
+        if (value instanceof LocalDateTime) {
+            value = DDC.localDateTimeToTimestamp((LocalDateTime) value, null);
+        }
         loggerExternal.exiting(getClassNameLogging(), "getObject", value);
         return value;
     }
@@ -2381,13 +2389,10 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
             returnValue = getTimestamp(columnIndex);
         } else if (type == java.time.LocalDateTime.class || type == java.time.LocalDate.class
                 || type == java.time.LocalTime.class) {
-            java.sql.Timestamp ts = getTimestamp(columnIndex,
-                    Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")));
-            if (ts == null) {
+            LocalDateTime ldt = getLocalDateTime(columnIndex);
+            if (ldt == null) {
                 returnValue = null;
             } else {
-                java.time.LocalDateTime ldt = java.time.LocalDateTime.ofInstant(ts.toInstant(),
-                        java.time.ZoneId.of("UTC"));
                 if (type == java.time.LocalDateTime.class) {
                     returnValue = ldt;
                 } else if (type == java.time.LocalDate.class) {
@@ -2586,7 +2591,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
     public java.sql.Timestamp getTimestamp(int columnIndex) throws SQLServerException {
         loggerExternal.entering(getClassNameLogging(), "getTimestamp", columnIndex);
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(columnIndex, JDBCType.TIMESTAMP);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime)  getValue(columnIndex, JDBCType.TIMESTAMP), null);
         loggerExternal.exiting(getClassNameLogging(), "getTimestamp", value);
         return value;
     }
@@ -2595,7 +2600,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
     public java.sql.Timestamp getTimestamp(String columnName) throws SQLServerException {
         loggerExternal.entering(getClassNameLogging(), "getTimestamp", columnName);
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(findColumn(columnName), JDBCType.TIMESTAMP);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime)  getValue(findColumn(columnName), JDBCType.TIMESTAMP), null);
         loggerExternal.exiting(getClassNameLogging(), "getTimestamp", value);
         return value;
     }
@@ -2605,7 +2610,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getTimestamp", new Object[] {columnIndex, cal});
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(columnIndex, JDBCType.TIMESTAMP, cal);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime)  getValue(columnIndex, JDBCType.TIMESTAMP, cal), cal);
         loggerExternal.exiting(getClassNameLogging(), "getTimeStamp", value);
         return value;
     }
@@ -2615,7 +2620,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getTimestamp", new Object[] {colName, cal});
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(findColumn(colName), JDBCType.TIMESTAMP, cal);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(findColumn(colName), JDBCType.TIMESTAMP, cal), cal);
         loggerExternal.exiting(getClassNameLogging(), "getTimestamp", value);
         return value;
     }
@@ -2624,7 +2629,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
     public java.sql.Timestamp getDateTime(int columnIndex) throws SQLServerException {
         loggerExternal.entering(getClassNameLogging(), "getDateTime", columnIndex);
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(columnIndex, JDBCType.TIMESTAMP);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(columnIndex, JDBCType.TIMESTAMP), null);
         loggerExternal.exiting(getClassNameLogging(), "getDateTime", value);
         return value;
     }
@@ -2633,7 +2638,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
     public java.sql.Timestamp getDateTime(String columnName) throws SQLServerException {
         loggerExternal.entering(getClassNameLogging(), "getDateTime", columnName);
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(findColumn(columnName), JDBCType.TIMESTAMP);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime)  getValue(findColumn(columnName), JDBCType.TIMESTAMP), null);
         loggerExternal.exiting(getClassNameLogging(), "getDateTime", value);
         return value;
     }
@@ -2643,7 +2648,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getDateTime", new Object[] {columnIndex, cal});
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(columnIndex, JDBCType.TIMESTAMP, cal);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(columnIndex, JDBCType.TIMESTAMP, cal), cal);
         loggerExternal.exiting(getClassNameLogging(), "getDateTime", value);
         return value;
     }
@@ -2653,7 +2658,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getDateTime", new Object[] {colName, cal});
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(findColumn(colName), JDBCType.TIMESTAMP, cal);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(findColumn(colName), JDBCType.TIMESTAMP, cal), cal);
         loggerExternal.exiting(getClassNameLogging(), "getDateTime", value);
         return value;
     }
@@ -2662,7 +2667,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
     public java.sql.Timestamp getSmallDateTime(int columnIndex) throws SQLServerException {
         loggerExternal.entering(getClassNameLogging(), "getSmallDateTime", columnIndex);
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(columnIndex, JDBCType.TIMESTAMP);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(columnIndex, JDBCType.TIMESTAMP), null);
         loggerExternal.exiting(getClassNameLogging(), "getSmallDateTime", value);
         return value;
     }
@@ -2671,7 +2676,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
     public java.sql.Timestamp getSmallDateTime(String columnName) throws SQLServerException {
         loggerExternal.entering(getClassNameLogging(), "getSmallDateTime", columnName);
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(findColumn(columnName), JDBCType.TIMESTAMP);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime)  getValue(findColumn(columnName), JDBCType.TIMESTAMP), null);
         loggerExternal.exiting(getClassNameLogging(), "getSmallDateTime", value);
         return value;
     }
@@ -2681,7 +2686,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getSmallDateTime", new Object[] {columnIndex, cal});
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(columnIndex, JDBCType.TIMESTAMP, cal);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime) getValue(columnIndex, JDBCType.TIMESTAMP, cal), cal);
         loggerExternal.exiting(getClassNameLogging(), "getSmallDateTime", value);
         return value;
     }
@@ -2691,7 +2696,7 @@ public class SQLServerResultSet implements ISQLServerResultSet, java.io.Serializ
         if (loggerExternal.isLoggable(java.util.logging.Level.FINER))
             loggerExternal.entering(getClassNameLogging(), "getSmallDateTime", new Object[] {colName, cal});
         checkClosed();
-        java.sql.Timestamp value = (java.sql.Timestamp) getValue(findColumn(colName), JDBCType.TIMESTAMP, cal);
+        java.sql.Timestamp value = DDC.localDateTimeToTimestamp((LocalDateTime)  getValue(findColumn(colName), JDBCType.TIMESTAMP, cal), cal);
         loggerExternal.exiting(getClassNameLogging(), "getSmallDateTime", value);
         return value;
     }
